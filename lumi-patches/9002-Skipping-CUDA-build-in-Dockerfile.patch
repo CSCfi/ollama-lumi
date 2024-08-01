@@ -1,0 +1,24 @@
+From 24731ed266793dde8dab1bf68c8166cd575d3c23 Mon Sep 17 00:00:00 2001
+From: Lukas Prediger <lukas.prediger@csc.fi>
+Date: Thu, 1 Aug 2024 13:01:03 +0000
+Subject: [PATCH] Skipping CUDA build in Dockerfile
+
+---
+ Dockerfile | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/Dockerfile b/Dockerfile
+index c8efdd8a..bb0fbe45 100644
+--- a/Dockerfile
++++ b/Dockerfile
+@@ -95,7 +95,6 @@ COPY . .
+ COPY --from=static-build-amd64 /go/src/github.com/ollama/ollama/llm/build/linux/ llm/build/linux/
+ COPY --from=cpu_avx-build-amd64 /go/src/github.com/ollama/ollama/llm/build/linux/ llm/build/linux/
+ COPY --from=cpu_avx2-build-amd64 /go/src/github.com/ollama/ollama/llm/build/linux/ llm/build/linux/
+-COPY --from=cuda-build-amd64 /go/src/github.com/ollama/ollama/llm/build/linux/ llm/build/linux/
+ COPY --from=rocm-build-amd64 /go/src/github.com/ollama/ollama/llm/build/linux/ llm/build/linux/
+ COPY --from=rocm-build-amd64 /go/src/github.com/ollama/ollama/dist/deps/ ./dist/deps/
+ ARG GOFLAGS
+-- 
+2.34.1
+

@@ -1,0 +1,63 @@
+From 77cc65fa1bd9831eb92909b757301213718d7f82 Mon Sep 17 00:00:00 2001
+From: Lukas Prediger <lukas.prediger@csc.fi>
+Date: Thu, 1 Aug 2024 10:03:15 +0000
+Subject: [PATCH 3/3] Index only available AMD GPUs.
+
+Previously AMDGetGPUInfo assigns GPU IDs for each node in
+/sys/class/kfd/kfd/topology/nodes/ and expects these
+to map directly to IDs as used in HIP/ROCR_VISIBLE_DEVICES.
+
+This is not always the case, e.g., when used with the SLURM
+scheduler, which will hide devices from jobs using cgroups.
+In that case IDs assumed by Ollama and assigned by ROCr
+will differ, causing Ollama to fail to start worker processes
+(or applying wrong filters based on HIP/ROCR_VISIBLE_DEVICES).
+
+We can detect which nodes are hidden from the current process
+since trying to read the corresponding files in
+/sys/class/kfd/kfd/topology/nodes/... results in permission
+errors.
+
+This commit adjusts the GPU ID assignment in AMDGetGPUInfo
+to only assign an ID to devices/nodes that are accessible
+(not skipped due to read permission errors of the properties files)
+in an incremental fashion.
+
+Caveat: This works on the tested system, but there may be
+edge cases in which it fails.
+---
+ gpu/amd_linux.go | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/gpu/amd_linux.go b/gpu/amd_linux.go
+index e4a010f7..87e2fa41 100644
+--- a/gpu/amd_linux.go
++++ b/gpu/amd_linux.go
+@@ -98,6 +98,7 @@ func AMDGetGPUInfo() []RocmGPUInfo {
+ 		return a < b
+ 	})
+ 	cpuCount := 0
++	gpuID := -1
+ 	for _, match := range matches {
+ 		slog.Debug("evaluating amdgpu node " + match)
+ 		fp, err := os.Open(match)
+@@ -194,12 +195,12 @@ func AMDGetGPUInfo() []RocmGPUInfo {
+ 			continue
+ 		}
+ 
+-		// CPUs are always first in the list
+-		gpuID := nodeID - cpuCount
++		// Found an accessible GPU, increment GPU counter (assuming that non-accessible GPUs are cgroup-ed out of ROCr views)
++		gpuID++
+ 
+ 		// Shouldn't happen, but just in case...
+-		if gpuID < 0 {
+-			slog.Error("unexpected amdgpu sysfs data resulted in negative GPU ID, please set OLLAMA_DEBUG=1 and report an issue")
++		if gpuID > nodeID - cpuCount {
++			slog.Error("unexpected amdgpu sysfs data resulted in too large GPU ID, please set OLLAMA_DEBUG=1 and report an issue")
+ 			return nil
+ 		}
+ 
+-- 
+2.34.1
+

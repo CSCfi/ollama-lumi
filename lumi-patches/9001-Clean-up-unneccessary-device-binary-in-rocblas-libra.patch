@@ -1,0 +1,27 @@
+From 13650550dbb8cef5c93c6d146a85f4eaa120cc28 Mon Sep 17 00:00:00 2001
+From: Lukas Prediger <lukas.prediger@csc.fi>
+Date: Thu, 1 Aug 2024 12:23:23 +0000
+Subject: [PATCH] Clean up unneccessary device binary in rocblas library in
+ Dockerfile.
+
+Removes all rocblas library device binaries not needed for LUMI,
+i.e., corresponding to GPU targets other than gfx90a.
+---
+ Dockerfile | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/Dockerfile b/Dockerfile
+index c8efdd8a..3559b35c 100644
+--- a/Dockerfile
++++ b/Dockerfile
+@@ -126,6 +126,7 @@ COPY --from=build-arm64 /go/src/github.com/ollama/ollama/ollama /bin/ollama
+ FROM --platform=linux/amd64 rocm/dev-centos-7:${ROCM_VERSION}-complete as runtime-rocm
+ RUN update-pciids
+ COPY --from=build-amd64 /go/src/github.com/ollama/ollama/ollama /bin/ollama
++RUN rm $(find /opt/rocm/lib/rocblas/library/ -iname "*gfx*" ! -iname "*gfx90a*")
+ EXPOSE 11434
+ ENV OLLAMA_HOST 0.0.0.0
+ 
+-- 
+2.34.1
+

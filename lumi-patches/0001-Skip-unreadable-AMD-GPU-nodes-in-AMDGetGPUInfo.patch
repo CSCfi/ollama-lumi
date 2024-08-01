@@ -1,0 +1,42 @@
+From 32adb46833f0e47b2ef3d967dc2d49dd7226e98f Mon Sep 17 00:00:00 2001
+From: Lukas Prediger <lukas.prediger@csc.fi>
+Date: Thu, 1 Aug 2024 09:53:13 +0000
+Subject: [PATCH 1/3] Skip unreadable AMD GPU nodes in AMDGetGPUInfo.
+
+AMDGetGPUInfo attempts to read all files matching
+/sys/class/kfd/kfd/topology/nodes/*/properties.
+It skips any file where os.Open returns an error,
+however an error encountered during reading does not
+cause skipping over that node but instead considers
+that node with many of the properties left uninitialized.
+
+This can e.g. happen on permission errors, such as when
+cgroup controls block access to devices on multi-user HPC
+systems.
+
+This commit adds a check that skips the node when bufio.Scanner
+encounters an error while reading the node property file.
+---
+ gpu/amd_linux.go | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/gpu/amd_linux.go b/gpu/amd_linux.go
+index 1ad4b906..66862ea5 100644
+--- a/gpu/amd_linux.go
++++ b/gpu/amd_linux.go
+@@ -179,6 +179,12 @@ func AMDGetGPUInfo() []RocmGPUInfo {
+ 			// Other metrics that may help us understand relative performance between multiple GPUs
+ 		}
+ 
++		err = scanner.Err()
++		if err != nil {
++			slog.Debug("failed to read sysfs node", "file", match, "error", err)
++			continue
++		}
++
+ 		// Note: while ./mem_banks/*/used_memory exists, it doesn't appear to take other VRAM consumers
+ 		// into consideration, so we instead map the device over to the DRM driver sysfs nodes which
+ 		// do reliably report VRAM usage.
+-- 
+2.34.1
+
