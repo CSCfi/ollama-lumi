@@ -1,0 +1,15 @@
+FROM rockylinux:9.2
+
+ARG ROCM_VERSION=5.6.1
+ENV ROCM_PATH=/opt/rocm-$ROCM_VERSION
+RUN yum install -y --enablerepo=extras epel-release && yum install -y https://repo.radeon.com/amdgpu-install/5.6.1/rhel/9.2/amdgpu-install-5.6.50601-1.el9.noarch.rpm && yum install -y amdgpu-dkms && yum install -y --enablerepo=crb rocm-libs rocm-device-libs && yum autoremove && yum clean all
+
+
+ENV GPU_DEVICE_TARGETS="gfx90a:sramecc+:xnack-"
+#RUN echo $GPU_DEVICE_TARGETS > $ROCM_PATH/bin/target.lst
+
+ENV HIP_PATH=$ROCM_PATH/hip
+ENV PATH=$HIP_PATH/bin:$PATH
+ENV PATH="$ROCM_PATH/bin:${PATH}"
+ENV LD_LIBRARY_PATH=/opt/rocm/lib:$LD_LIBRARY_PATH
+

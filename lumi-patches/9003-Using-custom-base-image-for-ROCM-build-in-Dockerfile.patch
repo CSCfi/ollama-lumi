@@ -1,0 +1,34 @@
+From a85d2d8d0aff957f476fcadc7bd3faf9836e4597 Mon Sep 17 00:00:00 2001
+From: Lukas Prediger <lukas.prediger@csc.fi>
+Date: Wed, 7 Aug 2024 07:08:22 +0000
+Subject: [PATCH 5/5] Using custom base image for ROCM build in Dockerfile.
+
+---
+ Dockerfile | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/Dockerfile b/Dockerfile
+index bb0fbe45..6b4e80e4 100644
+--- a/Dockerfile
++++ b/Dockerfile
+@@ -3,6 +3,7 @@ ARG CMAKE_VERSION=3.22.1
+ # this CUDA_VERSION corresponds with the one specified in docs/gpu.md
+ ARG CUDA_VERSION=11.3.1
+ ARG ROCM_VERSION=6.1.2
++ARG ROCM_BASE_IMAGE
+ 
+ # Copy the minimal context we need to run the generate scripts
+ FROM scratch AS llm-code
+@@ -122,7 +124,8 @@ RUN apt-get update && apt-get install -y ca-certificates
+ COPY --from=build-arm64 /go/src/github.com/ollama/ollama/ollama /bin/ollama
+ 
+ # Radeon images are much larger so we keep it distinct from the CPU/CUDA image
+-FROM --platform=linux/amd64 rocm/dev-centos-7:${ROCM_VERSION}-complete as runtime-rocm
++FROM --platform=linux/amd64 ${ROCM_BASE_IMAGE} as runtime-rocm
++#FROM --platform=linux/amd64 rocm/dev-centos-7:${ROCM_VERSION}-complete as runtime-rocm
+ RUN update-pciids
+ COPY --from=build-amd64 /go/src/github.com/ollama/ollama/ollama /bin/ollama
+ RUN rm $(find /opt/rocm/lib/rocblas/library/ -iname "*gfx*" ! -iname "*gfx90a*")
+-- 
+2.34.1
+
