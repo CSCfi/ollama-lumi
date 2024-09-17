@@ -16,3 +16,7 @@ The build script assumes that all required software is present on the system, mo
 - singularity/apptainer
 
 The build process was tested with Ollama v0.3.2. For drastically newer versions, problems might occur.
+
+## Patch Notes
+
+- 2024-09-17: The container image resulting from this build process was confirmed to work on LUMI after the recent system update.
