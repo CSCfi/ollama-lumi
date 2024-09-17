@@ -1,0 +1,56 @@
+From c1f6eaa5c89ea32123c1f43b4f6b45cc57f3bf4a Mon Sep 17 00:00:00 2001
+From: Lukas Prediger <lukas.prediger@csc.fi>
+Date: Mon, 9 Sep 2024 12:57:53 +0000
+Subject: [PATCH 5/5] Make libhipblas version runtime check compile-time
+ configurable.
+
+AMDGetGPUInfo requires libhipblas.so.2* to be present by default
+in the ROCM installation or it would ignore availalbe GPUs.
+libhipblas 2 is only available starting from ROCm v6.
+Ollama appears to be compiling and running fine with older versions
+of ROCm (tested for 5.6.1) which come with libhipblas.so.1*.
+
+However, relaxing the filter in ROCmLibGlobs to accept either version
+could lead into problems where Ollama is compiled against one version
+of ROCm but finds another that is incompatible during runtime.
+
+As a soluation, the library name to search for is now stored in
+variable gpu.ROCmLib and can be adjusted during compilation using
+export GOFLAGS="'-ldflags=-w -s
+\"-X=github.com/ollama/ollama/gpu.ROCmLib=libhipblas.so.1*\"'".
+
+This approach was suggested by Daniel Hiltgen (dhiltgen).
+---
+ Dockerfile       | 1 +
+ gpu/amd_linux.go | 3 ++-
+ 2 files changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/Dockerfile b/Dockerfile
+index c8efdd8a..6262fc11 100644
+--- a/Dockerfile
++++ b/Dockerfile
+@@ -39,6 +39,7 @@ ENV LIBRARY_PATH /opt/amdgpu/lib64
+ COPY --from=llm-code / /go/src/github.com/ollama/ollama/
+ WORKDIR /go/src/github.com/ollama/ollama/llm/generate
+ ARG CGO_CFLAGS
++ARG GOFLAGS
+ ARG AMDGPU_TARGETS
+ RUN OLLAMA_SKIP_STATIC_GENERATE=1 OLLAMA_SKIP_CPU_GENERATE=1 sh gen_linux.sh
+ RUN mkdir /tmp/scratch && \
+diff --git a/gpu/amd_linux.go b/gpu/amd_linux.go
+index cba03a19..6fc35621 100644
+--- a/gpu/amd_linux.go
++++ b/gpu/amd_linux.go
+@@ -41,7 +41,8 @@ const (
+ 
+ var (
+ 	// Used to validate if the given ROCm lib is usable
+-	ROCmLibGlobs          = []string{"libhipblas.so.2*", "rocblas"} // TODO - probably include more coverage of files here...
++	ROCmLib = "libhipblas.so.2*"
++	ROCmLibGlobs          = []string{ROCmLib, "rocblas"} // TODO - probably include more coverage of files here...
+ 	RocmStandardLocations = []string{"/opt/rocm/lib", "/usr/lib64"}
+ )
+ 
+-- 
+2.34.1
+

@@ -31,7 +31,7 @@ git checkout $OLLAMA_VERSION
 git apply ../../lumi-patches/*.patch
 
 # Build Ollama ROCM docker image
-docker build -t $DOCKER_IMAGE_NAME:$LUMI_ROCM_VERSION --target runtime-rocm --build-arg AMDGPU_TARGETS="gfx90a:sramecc+:xnack-" --build-arg ROCM_VERSION=$LUMI_ROCM_VERSION --build-arg ROCM_BASE_IMAGE=$DOCKER_BASE_IMAGE_NAME:$LUMI_ROCM_VERSION .
+docker build -t $DOCKER_IMAGE_NAME:$LUMI_ROCM_VERSION --target runtime-rocm --build-arg AMDGPU_TARGETS="gfx90a:sramecc+:xnack-" --build-arg ROCM_VERSION=$LUMI_ROCM_VERSION --build-arg ROCM_BASE_IMAGE=$DOCKER_BASE_IMAGE_NAME:$LUMI_ROCM_VERSION --build-arg GOFLAGS="'-ldflags=-w -s \"-X=github.com/ollama/ollama/gpu.ROCmLib=libhipblas.so.1*\"'" .
 
 # Convert docker to singularity/apptainer image for LUMI
 singularity build ../../$SINGULARITY_IMAGE_NAME docker-daemon://$DOCKER_IMAGE_NAME:$LUMI_ROCM_VERSION
