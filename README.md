@@ -19,4 +19,5 @@ The build process was tested with Ollama v0.3.2. For drastically newer versions,
 
 ## Patch Notes
 
+- 2024-09-23: The container image was updated to build for ROCm 6.0.3 in accordance with the September 2024 LUMI system update.
 - 2024-09-17: The container image resulting from this build process was confirmed to work on LUMI after the recent system update.

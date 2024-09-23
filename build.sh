@@ -7,7 +7,8 @@
 set -xe
 
 OLLAMA_VERSION=v0.3.2
-LUMI_ROCM_VERSION=5.6.1  # this is the last ROCM version compatible with AMD drivers on LUMI
+LUMI_ROCM_VERSION=6.0.3  # this is the ROCM version compatible with AMD drivers on LUMI
+BUILD_ROCM_VERSION=6.0.2 # this is the closest ROCM version for which AMD provides a centos image; used during the build process in ollama dockerfile
 DOCKER_BASE_IMAGE_NAME=csc/lumi/rocm
 DOCKER_IMAGE_NAME=csc/lumi/ollama
 SINGULARITY_IMAGE_NAME=ollama-lumi-${OLLAMA_VERSION}.sif
@@ -31,7 +32,7 @@ git checkout $OLLAMA_VERSION
 git apply ../../lumi-patches/*.patch
 
 # Build Ollama ROCM docker image
-docker build -t $DOCKER_IMAGE_NAME:$LUMI_ROCM_VERSION --target runtime-rocm --build-arg AMDGPU_TARGETS="gfx90a:sramecc+:xnack-" --build-arg ROCM_VERSION=$LUMI_ROCM_VERSION --build-arg ROCM_BASE_IMAGE=$DOCKER_BASE_IMAGE_NAME:$LUMI_ROCM_VERSION --build-arg GOFLAGS="'-ldflags=-w -s \"-X=github.com/ollama/ollama/gpu.ROCmLib=libhipblas.so.1*\"'" .
+docker build -t $DOCKER_IMAGE_NAME:$LUMI_ROCM_VERSION --target runtime-rocm --build-arg AMDGPU_TARGETS="gfx90a:sramecc+:xnack-" --build-arg ROCM_VERSION=$BUILD_ROCM_VERSION --build-arg ROCM_BASE_IMAGE=$DOCKER_BASE_IMAGE_NAME:$LUMI_ROCM_VERSION .
 
 # Convert docker to singularity/apptainer image for LUMI
 singularity build ../../$SINGULARITY_IMAGE_NAME docker-daemon://$DOCKER_IMAGE_NAME:$LUMI_ROCM_VERSION
